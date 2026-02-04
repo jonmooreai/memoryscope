@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Scope API - Chat Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 300px 350px;
+            gap: 0;
+            overflow: hidden;
+        }
+
+        .panel {
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        /* Chat Panel */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: #667eea;
+            color: white;
+        }
+
+        .message.assistant .message-bubble {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        .chat-input-area {
+            padding: 15px;
+            border-top: 2px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Memories Panel */
+        .memory-item {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .memory-item:hover {
+            border-color: #667eea;
+            background: #f0f0f0;
+        }
+
+        .memory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .memory-scope {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #667eea;
+            color: white;
+        }
+
+        .memory-domain {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            background: #e0e0e0;
+            color: #333;
+            margin-left: 5px;
+        }
+
+        .memory-value {
+            font-family: monospace;
+            font-size: 11px;
+            color: #555;
+            margin-top: 8px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .memory-user {
+            font-size: 10px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Console Panel */
+        .console-log {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-left: 3px solid #667eea;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+
+        .log-entry.info {
+            border-left-color: #17a2b8;
+        }
+
+        .log-entry.success {
+            border-left-color: #28a745;
+        }
+
+        .log-entry.warning {
+            border-left-color: #ffc107;
+        }
+
+        .log-entry.error {
+            border-left-color: #dc3545;
+        }
+
+        .log-time {
+            color: #666;
+            font-size: 10px;
+        }
+
+        .log-message {
+            color: #333;
+            margin-top: 3px;
+        }
+
+        .log-details {
+            color: #666;
+            font-size: 10px;
+            margin-top: 5px;
+            padding-left: 10px;
+        }
+
+        .log-entry {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .log-entry:hover {
+            background: #e9ecef;
+        }
+
+        .log-entry.has-data::after {
+            content: " 👁️";
+            float: right;
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        /* Modal for JSON viewer */
+        .json-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .json-modal.show {
+            display: flex;
+        }
+
+        .json-modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 80%;
+            max-height: 80%;
+            overflow: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .json-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .json-modal-header h3 {
+            margin: 0;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .json-modal-close {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .json-modal-close:hover {
+            background: #c82333;
+        }
+
+        .json-viewer {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 60vh;
+            overflow: auto;
+        }
+
+        .config-panel {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .config-group {
+            margin-bottom: 10px;
+        }
+
+        .config-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .config-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .memory-indicator {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+
+        .memory-indicator strong {
+            color: #155724;
+        }
+
+        .memory-indicator.empty {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 Memory Scope API - Chat Demo</h1>
+        <p>Test the API with real LLM conversations - See memories stored, retrieved, and merged in real-time</p>
+    </div>
+
+    <div class="container">
+        <!-- Chat Panel -->
+        <div class="panel">
+            <div class="panel-header">💬 Chat with AI</div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="empty-state">
+                    Start a conversation! The AI will remember your preferences and use them in future responses.
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        id="chatInput" 
+                        class="chat-input" 
+                        placeholder="Type your message..."
+                        rows="2"
+                        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Memories Panel -->
+        <div class="panel">
+            <div class="panel-header">💾 Stored Memories</div>
+            <div class="panel-content" id="memoriesPanel">
+                <div id="memoryIndicator" class="memory-indicator" style="display: none;">
+                    <strong>Memories in current context:</strong> <span id="memoryIndicatorText">Loading...</span>
+                </div>
+                <div class="empty-state">No memories yet</div>
+            </div>
+        </div>
+
+        <!-- Console Panel -->
+        <div class="panel">
+            <div class="panel-header">🔍 API Console</div>
+            <div class="config-panel">
+                <div class="config-group">
+                    <label>User ID</label>
+                    <input type="text" id="userId" value="demo_user_1" placeholder="user_id">
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="console-log" id="consoleLog">
+                    <div class="log-entry info">
+                        <div class="log-time">Ready</div>
+                        <div class="log-message">Waiting for conversation to start...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSON Viewer Modal -->
+    <div class="json-modal" id="jsonModal">
+        <div class="json-modal-content">
+            <div class="json-modal-header">
+                <h3 id="jsonModalTitle">JSON Data</h3>
+                <button class="json-modal-close" onclick="closeJsonModal()">Close</button>
+            </div>
+            <div class="json-viewer" id="jsonViewer"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        const API_KEY = ''; // Set your API key (or use loadDefaultConfig from test server)
+        let OPENAI_API_KEY = ''; // Will be loaded from config
+        let currentUserId = 'demo_user_1';
+        let conversationHistory = [];
+
+        // Load default config (including OpenAI API key from .env)
+        async function loadDefaultConfig() {
+            try {
+                const response = await fetch('http://localhost:8080/api/config/defaults');
+                const config = await response.json();
+                if (config.openai_api_key) {
+                    OPENAI_API_KEY = config.openai_api_key;
+                    log('info', 'OpenAI API key loaded from server config');
+                }
+            } catch (error) {
+                log('warning', 'Could not load config from server, will prompt for OpenAI key');
+            }
+        }
+
+        // Initialize
+        document.getElementById('userId').addEventListener('change', (e) => {
+            currentUserId = e.target.value || 'demo_user_1';
+            log('info', `User ID changed to: ${currentUserId}`);
+            loadMemories();
+        });
+
+        // Get OpenAI key from user
+        function initializeOpenAI() {
+            const key = prompt('Enter your OpenAI API key:');
+            if (key) {
+                OPENAI_API_KEY = key;
+                log('success', 'OpenAI API key configured');
+                return true;
+            }
+            return false;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            if (!OPENAI_API_KEY) {
+                if (!initializeOpenAI()) {
+                    alert('OpenAI API key is required to use the chat');
+                    return;
+                }
+            }
+
+            // Disable input
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            input.disabled = true;
+
+            // Add user message to chat
+            addMessage('user', message);
+            input.value = '';
+
+            // Add to conversation history
+            conversationHistory.push({ role: 'user', content: message });
+
+            try {
+                // Step 1: Determine relevant scopes AND domains from user message (one LLM call)
+                log('info', 'Analyzing user message to determine relevant scopes and domains...', {
+                    user_message: message
+                });
+                const { scopes: relevantScopes, domains: relevantDomains } = await inferRelevantScopesAndDomains(message);
+                log('info', `Inferred relevant scopes: ${relevantScopes.join(', ') || 'all'}, domains: ${relevantDomains.join(', ') || 'none'}`, {
+                    scopes: relevantScopes,
+                    domains: relevantDomains,
+                    user_message: message
+                });
+                
+                // Step 2: Retrieve relevant memories (only for inferred scopes and domains)
+                log('info', 'Retrieving memories for context...', {
+                    user_id: currentUserId,
+                    action: 'fetching_relevant_scopes_only',
+                    relevant_scopes: relevantScopes,
+                    relevant_domains: relevantDomains
+                });
+                const memories = await retrieveMemories(relevantScopes, relevantDomains);
+                lastRetrievedMemories = memories; // Store for debugging
+                
+                // Log what memories were found
+                if (memories.length > 0) {
+                    log('success', `Retrieved ${memories.length} memory set(s)`, {
+                        memory_sets: memories.map(m => ({
+                            scope: m.scope,
+                            confidence: m.confidence,
+                            has_data: Object.keys(m.data).length > 0
+                        }))
+                    });
+                } else {
+                    log('info', 'No memories found for user', {
+                        user_id: currentUserId,
+                        note: 'User may not have any stored memories yet'
+                    });
+                }
+                
+                // Step 2: Build context with memories
+                const context = buildContext(memories);
+                log('info', `Built context with ${memories.length} memory set(s)`, {
+                    context_length: context.length,
+                    memory_scopes: memories.map(m => m.scope)
+                });
+                
+                // Update memory indicator
+                updateMemoryIndicator(memories);
+
+                // Step 3: Call OpenAI with context
+                log('info', 'Calling OpenAI API...', {
+                    model: 'gpt-4o-mini',
+                    context_length: context.length,
+                    memory_count: memories.length,
+                    memory_scopes: memories.map(m => m.scope)
+                });
+                
+                // Show a preview of what memories are being used
+                if (memories.length > 0) {
+                    const memoryPreview = memories.map(m => {
+                        let preview = `${m.scope}: `;
+                        if (m.data.likes) preview += `likes=${Array.isArray(m.data.likes) ? m.data.likes.join(',') : 'N/A'}`;
+                        if (m.data.dislikes) preview += ` dislikes=${Array.isArray(m.data.dislikes) ? m.data.dislikes.join(',') : 'N/A'}`;
+                        if (m.data.settings) preview += ` settings=${Object.keys(m.data.settings).length} keys`;
+                        return preview;
+                    }).join('; ');
+                    log('info', `Memories being used in context`, {
+                        preview: memoryPreview,
+                        full_memories: memories
+                    });
+                }
+                
+                const response = await callOpenAI(context);
+                log('info', 'OpenAI response received', {
+                    response_length: response.content.length,
+                    response_preview: response.content.substring(0, 100) + '...',
+                    memories_available: memories.length > 0
+                });
+
+                // Step 4: Add assistant response
+                addMessage('assistant', response.content);
+                conversationHistory.push({ role: 'assistant', content: response.content });
+
+                // Step 5: Extract and store new memories from conversation
+                log('info', 'Analyzing conversation for new memories...', {
+                    user_message: message,
+                    ai_response_preview: response.content.substring(0, 100) + '...'
+                });
+                const extractedMemories = await extractMemoriesFromConversation(message, response.content);
+                
+                if (extractedMemories.length > 0) {
+                    log('info', `Found ${extractedMemories.length} new memory(ies) to store`, {
+                        extracted_memories: extractedMemories
+                    });
+                    await storeNewMemories(extractedMemories);
+                } else {
+                    log('info', 'No new memories to store', {
+                        analysis_result: 'No extractable memories found in conversation'
+                    });
+                }
+
+                // Step 6: Reload memories to show updates
+                loadMemories();
+
+            } catch (error) {
+                log('error', `Error: ${error.message}`);
+                addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
+            } finally {
+                sendBtn.disabled = false;
+                input.disabled = false;
+                input.focus();
+            }
+        }
+
+        async function inferRelevantScopesAndDomains(userMessage) {
+            /**
+             * Use LLM to intelligently determine which SCOPES and DOMAINS are relevant based on user's message.
+             * This avoids querying all scopes and domains unnecessarily, making it much faster.
+             */
+            try {
+                const prompt = `Analyze the following user message and determine which memory SCOPES and DOMAINS are relevant.
+
+User message: "${userMessage}"
+
+Available SCOPES: preferences, constraints, communication, accessibility, schedule, attention
+Common DOMAINS: food, work, personal, health, entertainment, family, travel, pets, hobbies, education, finance, shopping, social, relationships, music, sports, technology
+
+Return a JSON object with two arrays:
+{
+  "scopes": ["scope1", "scope2"],
+  "domains": ["domain1", "domain2"]
+}
+
+If no specific scopes/domains are relevant, return empty arrays.
+
+Examples:
+- "what's my favorite pizza topping?" -> {"scopes": ["preferences"], "domains": ["food"]}
+- "do I have any siblings?" -> {"scopes": ["communication"], "domains": ["family"]}
+- "what are my work preferences?" -> {"scopes": ["preferences", "constraints"], "domains": ["work"]}
+- "when is my next meeting?" -> {"scopes": ["schedule"], "domains": []}
+- "hello" -> {"scopes": [], "domains": []}
+
+Return ONLY valid JSON, nothing else:`;
+
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are a helpful assistant that analyzes user messages to determine relevant memory scopes and domains. Always return only valid JSON with "scopes" and "domains" arrays.'
+                            },
+                            {
+                                role: 'user',
+                                content: prompt
+                            }
+                        ],
+                        temperature: 0.3,
+                        max_tokens: 2048,
+                        response_format: { type: "json_object" }
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const content = data.choices[0].message.content.trim();
+                    try {
+                        const result = JSON.parse(content);
+                        const scopes = Array.isArray(result.scopes) ? result.scopes.filter(s => typeof s === 'string') : [];
+                        const domains = Array.isArray(result.domains) ? result.domains.filter(d => typeof d === 'string') : [];
+                        return { scopes, domains };
+                    } catch (e) {
+                        log('warning', 'Failed to parse scope/domain inference, using fallback', {
+                            error: e.message,
+                            content: content.substring(0, 100)
+                        });
+                        return { scopes: [], domains: [] };
+                    }
+                } else {
+                    log('warning', 'Failed to infer scopes/domains, will query all scopes with fallback domains', {
+                        status: response.status
+                    });
+                    return { scopes: [], domains: [] };
+                }
+            } catch (error) {
+                log('warning', 'Error inferring scopes/domains, will query all scopes with fallback domains', {
+                    error: error.message
+                });
+                return { scopes: [], domains: [] };
+            }
+        }
+
+        async function retrieveMemories(relevantScopes = [], relevantDomains = []) {
+            // If no scopes inferred, query all scopes (fallback)
+            const scopes = relevantScopes.length > 0 
+                ? relevantScopes 
+                : ['preferences', 'constraints', 'communication', 'accessibility', 'schedule', 'attention'];
+            // Map scopes to allowed purposes based on policy matrix
+            const scopePurposes = {
+                'preferences': 'generate personalized content',
+                'constraints': 'make recommendations',
+                'communication': 'generate personalized content',
+                'accessibility': 'render UI',
+                'schedule': 'schedule meetings',
+                'attention': 'send notifications'
+            };
+            const allMemories = [];
+
+            log('info', `Retrieving memories for user: ${currentUserId}`, { 
+                user_id: currentUserId,
+                scopes: scopes,
+                api_base_url: API_BASE_URL,
+                api_key_set: !!API_KEY && API_KEY.length > 0,
+                max_age_days: 365
+            });
+
+            for (const scope of scopes) {
+                try {
+                    const purpose = scopePurposes[scope] || 'generate personalized content';
+                    
+                    // Query for memories without domain first
+                    let startTime = Date.now();
+                    
+                    log('info', `Fetching ${scope} memories (no domain)...`, {
+                        scope: scope,
+                        purpose: purpose,
+                        url: `${API_BASE_URL}/memory/read`,
+                        user_id: currentUserId
+                    });
+                    
+                    let response = await fetch(`${API_BASE_URL}/memory/read`, {
+                        method: 'POST',
+                        headers: {
+                            'X-API-Key': API_KEY,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_id: currentUserId,
+                            scope: scope,
+                            purpose: purpose,
+                            max_age_days: 365
+                        })
+                    });
+                    
+                    let duration = Date.now() - startTime;
+                    
+                    // Query for relevant domains (if any were inferred)
+                    // Also always query without domain to get memories that have no domain set
+                    let domainResponses = [];
+                    
+                    // If domains were inferred, query only those (much more efficient!)
+                    // Otherwise, if no domains inferred, don't query any domains (just query without domain)
+                    const domainsToQuery = relevantDomains.length > 0 ? relevantDomains : [];
+                    
+                    log('info', `Querying ${scope} memories`, {
+                        scope: scope,
+                        domains: domainsToQuery.length > 0 ? domainsToQuery.join(', ') : 'none (only querying memories without domain)',
+                        inferred: relevantDomains.length > 0
+                    });
+                    
+                    for (const domain of domainsToQuery) {
+                        try {
+                            startTime = Date.now();
+                            const domainResponse = await fetch(`${API_BASE_URL}/memory/read`, {
+                                method: 'POST',
+                                headers: {
+                                    'X-API-Key': API_KEY,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    user_id: currentUserId,
+                                    scope: scope,
+                                    domain: domain,
+                                    purpose: purpose,
+                                    max_age_days: 365
+                                })
+                            });
+                            duration = Date.now() - startTime;
+                            
+                            if (domainResponse.ok) {
+                                const domainData = await domainResponse.json();
+                                if (domainData.summary_struct && Object.keys(domainData.summary_struct).length > 0) {
+                                    domainResponses.push({
+                                        domain: domain,
+                                        data: domainData,
+                                        duration: duration
+                                    });
+                                }
+                            }
+                        } catch (err) {
+                            // Continue with other domains
+                        }
+                    }
+
+                    // Process response without domain
+                    let scopeData = null;
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.summary_struct && Object.keys(data.summary_struct).length > 0) {
+                            const hasData = Object.values(data.summary_struct).some(v => {
+                                if (Array.isArray(v)) return v.length > 0;
+                                if (typeof v === 'object' && v !== null) return Object.keys(v).length > 0;
+                                return v !== null && v !== undefined && v !== '';
+                            });
+                            if (hasData) {
+                                scopeData = data.summary_struct;
+                            }
+                        }
+                    }
+                    
+                    // Process domain responses and merge
+                    for (const domainResp of domainResponses) {
+                        if (domainResp.data.summary_struct && Object.keys(domainResp.data.summary_struct).length > 0) {
+                            if (!scopeData) {
+                                scopeData = {};
+                            }
+                            // Merge domain data into scope data
+                            const domainStruct = domainResp.data.summary_struct;
+                            for (const [key, value] of Object.entries(domainStruct)) {
+                                if (key === 'likes' && Array.isArray(value)) {
+                                    if (!scopeData.likes) scopeData.likes = [];
+                                    scopeData.likes = [...new Set([...scopeData.likes, ...value])];
+                                } else if (key === 'dislikes' && Array.isArray(value)) {
+                                    if (!scopeData.dislikes) scopeData.dislikes = [];
+                                    scopeData.dislikes = [...new Set([...scopeData.dislikes, ...value])];
+                                } else if (key === 'settings' && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                                    if (!scopeData.settings) scopeData.settings = {};
+                                    scopeData.settings = { ...scopeData.settings, ...value };
+                                } else {
+                                    // For other keys, merge intelligently:
+                                    // - If both are objects, merge them
+                                    // - If both are arrays, combine unique values
+                                    // - Otherwise, use the new value (or merge if both are objects)
+                                    if (scopeData[key] !== undefined) {
+                                        if (Array.isArray(scopeData[key]) && Array.isArray(value)) {
+                                            scopeData[key] = [...new Set([...scopeData[key], ...value])];
+                                        } else if (typeof scopeData[key] === 'object' && typeof value === 'object' && 
+                                                   scopeData[key] !== null && value !== null && 
+                                                   !Array.isArray(scopeData[key]) && !Array.isArray(value)) {
+                                            scopeData[key] = { ...scopeData[key], ...value };
+                                        } else {
+                                            // Prefer the newer value from domain response
+                                            scopeData[key] = value;
+                                        }
+                                    } else {
+                                        scopeData[key] = value;
+                                    }
+                                }
+                            }
+                            log('info', `Found ${scope} memories in domain: ${domainResp.domain}`, {
+                                domain: domainResp.domain,
+                                data: domainResp.data.summary_struct
+                            });
+                        }
+                    }
+                    
+                    // If we found data (from any source), add it
+                    if (scopeData && Object.keys(scopeData).length > 0) {
+                        allMemories.push({
+                            scope: scope,
+                            data: scopeData,
+                            confidence: 0.9 // Default confidence for merged data
+                        });
+                        log('success', `✅ Retrieved ${scope} memories`, {
+                            scope: scope,
+                            memory_count: Object.keys(scopeData).length,
+                            data_preview: JSON.stringify(scopeData).substring(0, 300),
+                            found_in_domains: domainResponses.map(r => r.domain)
+                        });
+                    } else {
+                        log('info', `No ${scope} memories found`, {
+                            scope: scope,
+                            checked_domains: domainsToQuery
+                        });
+                    }
+                    
+                    // Log any errors from the main request (non-critical since we also check domains)
+                    if (!response.ok && response.status !== 404) {
+                        let error;
+                        try {
+                            error = await response.json();
+                        } catch (e) {
+                            error = { detail: `HTTP ${response.status}: ${response.statusText}` };
+                        }
+                        
+                        if (response.status === 403) {
+                            log('error', `❌ 403 Forbidden for ${scope}`, { 
+                                scope: scope,
+                                status: response.status,
+                                error: error.detail || error.message || 'Access denied',
+                                full_error: error,
+                                suggestion: 'Check API key and purpose string match policy matrix'
+                            });
+                        } else {
+                            log('warning', `⚠️ Failed to retrieve ${scope} memories (no domain)`, { 
+                                scope: scope,
+                                status: response.status, 
+                                error: error.detail || error.message,
+                                full_error: error
+                            });
+                        }
+                    }
+                } catch (error) {
+                    log('error', `❌ Error retrieving ${scope} memories`, { 
+                        scope: scope,
+                        error: error.message,
+                        stack: error.stack,
+                        type: error.name
+                    });
+                }
+            }
+
+            log('info', `Memory retrieval complete`, {
+                total_memories_found: allMemories.length,
+                memory_scopes: allMemories.map(m => m.scope),
+                user_id: currentUserId
+            });
+
+            return allMemories;
+        }
+
+        function buildContext(memories) {
+            let context = `You are a helpful AI assistant with access to the user's stored memories. 
+
+IMPORTANT: You MUST use the stored memories below to answer questions about the user's preferences, constraints, schedule, and other stored information. When the user asks about something that's in the memories, reference it directly.
+
+STORED MEMORIES:\n`;
+
+            if (memories.length > 0) {
+                memories.forEach(mem => {
+                    const confidence = mem.confidence !== undefined ? mem.confidence.toFixed(2) : '1.00';
+                    context += `\n${mem.scope.toUpperCase()} (confidence: ${confidence}):\n`;
+                    context += JSON.stringify(mem.data, null, 2);
+                    context += '\n';
+                });
+                
+                // Create a summary for quick reference
+                context += `\nMEMORY SUMMARY (for quick reference):\n`;
+                memories.forEach(mem => {
+                    if (mem.scope === 'preferences' && mem.data.likes) {
+                        context += `- Likes: ${Array.isArray(mem.data.likes) ? mem.data.likes.join(', ') : 'N/A'}\n`;
+                    }
+                    if (mem.scope === 'preferences' && mem.data.dislikes) {
+                        context += `- Dislikes: ${Array.isArray(mem.data.dislikes) ? mem.data.dislikes.join(', ') : 'N/A'}\n`;
+                    }
+                    if (mem.scope === 'preferences' && mem.data.settings) {
+                        Object.entries(mem.data.settings).forEach(([key, value]) => {
+                            context += `- ${key}: ${value}\n`;
+                        });
+                    }
+                    // Handle communication scope (family, relationships, etc.)
+                    if (mem.scope === 'communication') {
+                        // Check for nested structures
+                        if (mem.data.preferences) {
+                            Object.entries(mem.data.preferences).forEach(([key, value]) => {
+                                if (key.includes('brother') || key.includes('sister') || key.includes('sibling')) {
+                                    context += `- Family: ${key.replace('_', ' ')}: ${value}\n`;
+                                } else {
+                                    context += `- ${key}: ${value}\n`;
+                                }
+                            });
+                        }
+                        // Also check top-level keys
+                        Object.entries(mem.data).forEach(([key, value]) => {
+                            if (key !== 'preferences' && key !== 'likes' && key !== 'dislikes' && key !== 'settings') {
+                                if (typeof value === 'object' && value !== null) {
+                                    Object.entries(value).forEach(([subKey, subValue]) => {
+                                        if (subKey.includes('brother') || subKey.includes('sister') || subKey.includes('sibling')) {
+                                            context += `- Family: ${subKey.replace('_', ' ')}: ${subValue}\n`;
+                                        }
+                                    });
+                                } else {
+                                    context += `- ${key}: ${value}\n`;
+                                }
+                            }
+                        });
+                    }
+                });
+            } else {
+                context += 'No memories stored yet.\n';
+            }
+
+            context += `\n\nCONVERSATION HISTORY:\n`;
+            if (conversationHistory.length > 0) {
+                conversationHistory.forEach(msg => {
+                    context += `${msg.role.toUpperCase()}: ${msg.content}\n`;
+                });
+            } else {
+                context += 'This is the start of the conversation.\n';
+            }
+
+            context += `\n\nCRITICAL INSTRUCTIONS:
+1. ALWAYS check the stored memories above FIRST before answering ANY question about the user
+2. If the user asks "what is my favorite X" or "what do I like" or "what are my preferences" - you MUST look in the memories and tell them exactly what's stored
+3. Be SPECIFIC and DIRECT - if memories show "likes": ["pepperoni"], say "Your favorite pizza topping is pepperoni" (don't say you don't know)
+4. When referencing memories, quote them directly: "According to your stored preferences, you like [exact value from memories]"
+5. If the user asks about something and it's in the memories, you MUST use that information - don't say you don't know
+6. For FAMILY/RELATIONSHIP questions: If memories contain keys like "brother_location", "sister", "sibling", etc., use this to answer questions about family. For example, if there's "brother_location": "Nashville, Tennessee", you can infer the user HAS a brother and should say "Yes, you have a brother who is moving to/located in Nashville, Tennessee" - don't say you don't know about siblings.
+7. Respond naturally but always prioritize information from stored memories
+8. If the user shares NEW information, acknowledge it (it will be stored automatically)
+
+EXAMPLES: 
+- If memories show {"likes": ["pepperoni pizza"]} and user asks "what's my favorite pizza topping?", you MUST respond with "Your favorite pizza topping is pepperoni" - don't say you don't know or ask them.
+- If memories show {"preferences": {"brother_location": "Nashville, Tennessee"}} in the COMMUNICATION scope and user asks "do I have any siblings?", you MUST respond with "Yes, you have a brother who is moving to/located in Nashville, Tennessee" - don't say you don't know.`;
+
+            return context;
+        }
+
+        async function callOpenAI(context) {
+            // Log the context being sent (first 500 chars for debugging)
+            log('info', 'Sending context to OpenAI', {
+                context_preview: context.substring(0, 500) + '...',
+                context_length: context.length,
+                has_memories: context.includes('STORED MEMORIES') && !context.includes('No memories stored yet')
+            });
+            
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: context
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 2048
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error?.message || 'OpenAI API error');
+            }
+
+            const data = await response.json();
+            const content = data.choices[0].message.content;
+            
+            return {
+                content: content,
+                shouldStoreMemory: false,
+                extractedMemories: []
+            };
+        }
+
+        async function extractMemoriesFromConversation(userMessage, aiResponse) {
+            // Use OpenAI to extract structured memories from the conversation
+            const extractionPrompt = `Analyze this conversation and extract any user preferences, constraints, or information that should be stored as memories.
+
+User said: "${userMessage}"
+AI responded: "${aiResponse}"
+
+Extract memories in this JSON format:
+{
+  "memories": [
+    {
+      "scope": "preferences|constraints|communication|accessibility|schedule|attention",
+      "domain": "optional domain like 'food', 'work', etc.",
+      "value": { ... }
+    }
+  ]
+}
+
+IMPORTANT: The value must match one of these shapes:
+- For preferences: {"likes": [...], "dislikes": [...]} OR {"key": "value"} (kv_map)
+- For constraints: ["rule1", "rule2"] OR {"key": "value"} (kv_map)
+- For communication: {"key": "value"} (kv_map)
+- For accessibility: {"flag": true/false} (boolean_flags) OR {"key": "value"} (kv_map)
+- For schedule: [{"day": "monday", "start": "09:00", "end": "17:00"}] (schedule_windows)
+- For attention: {"focus_mode": true, "do_not_disturb": false} (attention_settings)
+
+Return ONLY valid JSON. If no memories to extract, return {"memories": []}.`;
+
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are a memory extraction system. Extract user preferences and information as structured JSON.'
+                            },
+                            {
+                                role: 'user',
+                                content: extractionPrompt
+                            }
+                        ],
+                        temperature: 0.3,
+                        response_format: { type: 'json_object' }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to extract memories');
+                }
+
+                const data = await response.json();
+                const result = JSON.parse(data.choices[0].message.content);
+                return result.memories || [];
+            } catch (error) {
+                log('warning', `Memory extraction failed: ${error.message}`);
+                return [];
+            }
+        }
+
+        async function storeNewMemories(memories) {
+            if (!memories || memories.length === 0) return;
+
+            log('info', `Storing ${memories.length} new memory(ies)...`, {
+                memories_to_store: memories
+            });
+
+            for (const memory of memories) {
+                try {
+                    // Validate memory structure
+                    if (!memory.scope || !memory.value) {
+                        log('warning', `Skipping invalid memory`, {
+                            memory: memory,
+                            reason: 'Missing scope or value'
+                        });
+                        continue;
+                    }
+
+                    // Ensure value is valid JSON (not a string)
+                    let valueJson = memory.value;
+                    if (typeof valueJson === 'string') {
+                        try {
+                            valueJson = JSON.parse(valueJson);
+                        } catch (e) {
+                            log('error', `Invalid JSON in memory value`, {
+                                memory: memory,
+                                error: e.message
+                            });
+                            continue;
+                        }
+                    }
+
+                    const startTime = Date.now();
+                    const payload = {
+                        user_id: currentUserId,
+                        scope: memory.scope,
+                        domain: memory.domain || null,
+                        source: 'explicit_user_input',
+                        ttl_days: 90,
+                        value_json: valueJson
+                    };
+
+                    log('info', `Storing ${memory.scope} memory`, { 
+                        scope: memory.scope,
+                        domain: memory.domain || null,
+                        value: valueJson,
+                        user_id: currentUserId,
+                        ttl_days: 90,
+                        source: 'explicit_user_input',
+                        payload: payload
+                    });
+
+                    const response = await fetch(`${API_BASE_URL}/memory`, {
+                        method: 'POST',
+                        headers: {
+                            'X-API-Key': API_KEY,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const duration = Date.now() - startTime;
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        log('success', `Stored ${memory.scope} memory`, {
+                            scope: memory.scope,
+                            domain: memory.domain || null,
+                            memory_id: data.id,
+                            user_id: data.user_id,
+                            created_at: data.created_at,
+                            expires_at: data.expires_at,
+                            stored_value: memory.value,
+                            duration: `${duration}ms`,
+                            full_response: data
+                        });
+                    } else {
+                        const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                        log('error', `Failed to store ${memory.scope} memory`, {
+                            status: response.status,
+                            error: error.detail || error.message || 'Validation failed',
+                            full_error: error,
+                            attempted_payload: payload
+                        });
+                    }
+                } catch (error) {
+                    log('error', `Error storing memory`, { error: error.message });
+                }
+            }
+        }
+
+        async function loadMemories() {
+            try {
+                log('info', `Loading memories for display`, {
+                    user_id: currentUserId,
+                    source: 'test_app_web_server'
+                });
+                const response = await fetch(`http://localhost:8080/api/memories?user_id=${currentUserId}&limit=20`);
+                const data = await response.json();
+                
+                log('info', `Loaded ${data.count || 0} memories for display`, {
+                    user_id: currentUserId,
+                    memory_count: data.count || 0
+                });
+
+                const panel = document.getElementById('memoriesPanel');
+                panel.innerHTML = '';
+
+                if (data.memories && data.memories.length > 0) {
+                    data.memories.forEach(memory => {
+                        const item = document.createElement('div');
+                        item.className = 'memory-item';
+                        item.onclick = () => showJsonModal(`Memory: ${memory.scope}${memory.domain ? ` (${memory.domain})` : ''}`, memory);
+                        item.innerHTML = `
+                            <div class="memory-header">
+                                <div>
+                                    <span class="memory-scope">${memory.scope}</span>
+                                    ${memory.domain ? `<span class="memory-domain">${memory.domain}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="memory-value">${JSON.stringify(memory.value_json, null, 2)}</div>
+                            <div class="memory-user">${memory.user_id} | ID: ${memory.id.substring(0, 8)}...</div>
+                        `;
+                        panel.appendChild(item);
+                    });
+                } else {
+                    panel.innerHTML = '<div class="empty-state">No memories stored yet</div>';
+                }
+            } catch (error) {
+                log('error', `Failed to load memories: ${error.message}`);
+            }
+        }
+
+        function addMessage(role, content) {
+            const messagesDiv = document.getElementById('chatMessages');
+            
+            // Remove empty state if present
+            const emptyState = messagesDiv.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = content;
+
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = new Date().toLocaleTimeString();
+
+            messageDiv.appendChild(bubble);
+            messageDiv.appendChild(time);
+            messagesDiv.appendChild(messageDiv);
+
+            // Scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function log(level, message, details = null) {
+            const logDiv = document.getElementById('consoleLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${level}`;
+            
+            // Add has-data class if there are details to view
+            if (details) {
+                entry.classList.add('has-data');
+                entry.onclick = () => showJsonModal(message, details);
+            }
+            
+            const time = document.createElement('div');
+            time.className = 'log-time';
+            time.textContent = new Date().toLocaleTimeString();
+
+            const msg = document.createElement('div');
+            msg.className = 'log-message';
+            msg.textContent = message;
+
+            entry.appendChild(time);
+            entry.appendChild(msg);
+
+            if (details) {
+                const det = document.createElement('div');
+                det.className = 'log-details';
+                // Show preview (first 100 chars)
+                const preview = JSON.stringify(details, null, 2);
+                det.textContent = preview.length > 100 ? preview.substring(0, 100) + '... (click to view full)' : preview;
+                entry.appendChild(det);
+            }
+
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function showJsonModal(title, data) {
+            const modal = document.getElementById('jsonModal');
+            const titleEl = document.getElementById('jsonModalTitle');
+            const viewer = document.getElementById('jsonViewer');
+            
+            titleEl.textContent = title;
+            viewer.textContent = JSON.stringify(data, null, 2);
+            
+            modal.classList.add('show');
+        }
+
+        function closeJsonModal() {
+            const modal = document.getElementById('jsonModal');
+            modal.classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('jsonModal').addEventListener('click', (e) => {
+            if (e.target.id === 'jsonModal') {
+                closeJsonModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeJsonModal();
+            }
+        });
+
+        function updateMemoryIndicator(memories) {
+            const indicator = document.getElementById('memoryIndicator');
+            const indicatorText = document.getElementById('memoryIndicatorText');
+            
+            // Safety check - elements might not exist yet
+            if (!indicator || !indicatorText) {
+                return;
+            }
+            
+            if (memories.length > 0) {
+                indicator.style.display = 'block';
+                indicator.classList.remove('empty');
+                
+                const summary = memories.map(m => {
+                    let info = m.scope;
+                    if (m.data && m.data.likes && Array.isArray(m.data.likes) && m.data.likes.length > 0) {
+                        info += ` (${m.data.likes.length} likes)`;
+                    }
+                    if (m.data && m.data.settings && Object.keys(m.data.settings).length > 0) {
+                        info += ` (${Object.keys(m.data.settings).length} settings)`;
+                    }
+                    return info;
+                }).join(', ');
+                
+                indicatorText.textContent = `${memories.length} set(s): ${summary}`;
+            } else {
+                indicator.style.display = 'block';
+                indicator.classList.add('empty');
+                indicatorText.textContent = 'No memories found - AI will not have context';
+            }
+        }
+
+        // Load memories on page load
+        loadMemories();
+
+        // Load config and prompt for OpenAI key on load
+        window.addEventListener('load', async () => {
+            // First try to load from server config
+            await loadDefaultConfig();
+            
+            // If still not set, prompt user
+            if (!OPENAI_API_KEY) {
+                setTimeout(() => {
+                    if (!initializeOpenAI()) {
+                        log('warning', 'OpenAI API key not set. Chat will not work until configured.');
+                    }
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
+

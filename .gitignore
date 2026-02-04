@@ -1,0 +1,93 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+*.db
+*.sqlite
+alembic/versions/*.pyc
+
+# Environment variables - NEVER COMMIT THESE
+.env
+.env.local
+.env.production
+.env.*.local
+.env.bak
+.env.backup
+.env.deploy.backup
+*.env
+*.env.bak
+
+# Firebase service account keys
+*-firebase-adminsdk-*.json
+firebase-adminsdk-*.json
+service-account*.json
+
+# Secrets and credentials
+secrets/
+credentials/
+*.pem
+*.key
+*.crt
+test_app/test_api_key.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database backups
+backups/
+*.sql
+*.dump
+
+# Node (for website)
+website/node_modules/
+website/.next/
+website/out/
+website/.env.local
+website/.env.production.local
+website/.env.development.local
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test-results/
+playwright-report/
+
+# Docker
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.env.bak
+.env.deploy

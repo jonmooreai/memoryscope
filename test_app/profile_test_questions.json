@@ -1,0 +1,215 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "category": "direct_recall",
+      "question": "Where did I grow up, and how did that environment shape how I relate to emotions?",
+      "expected_keywords": ["coastal town", "practical", "showing up", "feelings", "emotions"]
+    },
+    {
+      "id": 2,
+      "category": "direct_recall",
+      "question": "What kind of city do I live in now, and why did I choose it?",
+      "expected_keywords": ["mid-sized", "enough without demanding", "walkable", "old houses"]
+    },
+    {
+      "id": 3,
+      "category": "direct_recall",
+      "question": "What is my current profession, and what am I especially trusted with at work?",
+      "expected_keywords": ["product operations", "complicated things", "systems", "friction"]
+    },
+    {
+      "id": 4,
+      "category": "direct_recall",
+      "question": "How did my education influence my eventual career path?",
+      "expected_keywords": ["sociology", "bounced through jobs", "reduced friction"]
+    },
+    {
+      "id": 5,
+      "category": "direct_recall",
+      "question": "What is my relationship like with my immediate family members?",
+      "expected_keywords": ["sister", "close", "honest", "parents together", "different"]
+    },
+    {
+      "id": 6,
+      "category": "preference_recall",
+      "question": "What kind of neighborhoods and housing do I prefer, and what does that suggest I value?",
+      "expected_keywords": ["walkable", "old houses", "character", "grocery stores"]
+    },
+    {
+      "id": 7,
+      "category": "preference_recall",
+      "question": "How do I feel about spending money, and what kinds of things am I willing to pay more for?",
+      "expected_keywords": ["financially cautious", "save more", "quality", "time", "not status"]
+    },
+    {
+      "id": 8,
+      "category": "preference_recall",
+      "question": "What social settings tend to drain me versus energize me?",
+      "expected_keywords": ["small groups", "crowds", "space to reset", "long conversations"]
+    },
+    {
+      "id": 9,
+      "category": "preference_recall",
+      "question": "How do I relate to routine, and where do I intentionally leave flexibility?",
+      "expected_keywords": ["quiet mornings", "strong coffee", "routines", "improvisation"]
+    },
+    {
+      "id": 10,
+      "category": "preference_recall",
+      "question": "What kinds of books do I gravitate toward, and why?",
+      "expected_keywords": ["explain how things work", "mechanically", "psychologically"]
+    },
+    {
+      "id": 11,
+      "category": "inference",
+      "question": "What type of manager would I likely struggle under, and why?",
+      "expected_keywords": ["flashy", "status-driven", "chaos", "uncertainty"]
+    },
+    {
+      "id": 12,
+      "category": "inference",
+      "question": "In a conflict between speed and correctness at work, which would I likely prioritize?",
+      "expected_keywords": ["correctness", "systems", "dependable", "quality"]
+    },
+    {
+      "id": 13,
+      "category": "inference",
+      "question": "How would I probably feel about working at a highly status-driven company?",
+      "expected_keywords": ["not status", "not flashy", "pragmatic", "outcomes"]
+    },
+    {
+      "id": 14,
+      "category": "inference",
+      "question": "What risks am I more tolerant of, and which ones do I avoid?",
+      "expected_keywords": ["financially cautious", "optionality", "reversible", "time"]
+    },
+    {
+      "id": 15,
+      "category": "inference",
+      "question": "What does my approach to cooking reveal about how I approach other parts of life?",
+      "expected_keywords": ["craft", "not performance", "taken seriously", "systems"]
+    },
+    {
+      "id": 16,
+      "category": "synthesis",
+      "question": "How do my views on money, time, and optionality connect to each other?",
+      "expected_keywords": ["financially cautious", "optionality", "compounds", "reversible"]
+    },
+    {
+      "id": 17,
+      "category": "synthesis",
+      "question": "What tension exists between my dislike of conflict and my willingness to confront important issues?",
+      "expected_keywords": ["don't enjoy conflict", "won't avoid", "important", "stake"]
+    },
+    {
+      "id": 18,
+      "category": "synthesis",
+      "question": "How does my upbringing show up in my marriage dynamic?",
+      "expected_keywords": ["practical", "compromise", "different thinkers", "friction", "honest"]
+    },
+    {
+      "id": 19,
+      "category": "synthesis",
+      "question": "Why might people mistake my listening for agreement, and what problems could that cause?",
+      "expected_keywords": ["listen more", "speak less", "mistaken for agreement", "isn't"]
+    },
+    {
+      "id": 20,
+      "category": "synthesis",
+      "question": "What themes consistently show up in how I make decisions?",
+      "expected_keywords": ["systems", "pragmatic", "outcomes", "optionality", "time"]
+    },
+    {
+      "id": 21,
+      "category": "counterfactual",
+      "question": "If I suddenly had a large increase in income, what would I likely *not* change?",
+      "expected_keywords": ["lifestyle inflation", "status", "used things", "waste"]
+    },
+    {
+      "id": 22,
+      "category": "counterfactual",
+      "question": "What kind of lifestyle upgrade would tempt me, and which one would not?",
+      "expected_keywords": ["quality", "time", "not status", "waste"]
+    },
+    {
+      "id": 23,
+      "category": "counterfactual",
+      "question": "If I had to choose between a higher-paying job with more chaos and a lower-paying job with stability, which would I lean toward and why?",
+      "expected_keywords": ["stability", "dependable", "systems", "financially cautious"]
+    },
+    {
+      "id": 24,
+      "category": "counterfactual",
+      "question": "What might push me to finally make a firm decision about having children?",
+      "expected_keywords": ["undecided", "okay admitting", "certainty", "evidence"]
+    },
+    {
+      "id": 25,
+      "category": "counterfactual",
+      "question": "What would cause me to leave a city I otherwise like?",
+      "expected_keywords": ["enough without demanding", "walkable", "optionality"]
+    },
+    {
+      "id": 26,
+      "category": "stress_test",
+      "question": "What do I explicitly say I am undecided about, and how do I frame that uncertainty?",
+      "expected_keywords": ["kids", "undecided", "okay admitting", "certainty"]
+    },
+    {
+      "id": 27,
+      "category": "stress_test",
+      "question": "What values do I *not* claim, even though a generic profile might assume them?",
+      "expected_keywords": ["not flashy", "not impressive", "not nostalgic"]
+    },
+    {
+      "id": 28,
+      "category": "stress_test",
+      "question": "What parts of my life do I describe as intentional rather than accidental?",
+      "expected_keywords": ["didn't plan", "slowly realized", "intentionally leave"]
+    },
+    {
+      "id": 29,
+      "category": "stress_test",
+      "question": "What would be an inappropriate assumption to make about my political views?",
+      "expected_keywords": ["pragmatic", "ideology", "outcomes", "skeptical", "moral certainty"]
+    },
+    {
+      "id": 30,
+      "category": "stress_test",
+      "question": "What is one place where the bio suggests restraint instead of ambition?",
+      "expected_keywords": ["not impressive", "useful", "steady", "enough without demanding"]
+    },
+    {
+      "id": 31,
+      "category": "meta",
+      "question": "Summarize my core priorities in three non-generic phrases drawn from the bio.",
+      "expected_keywords": ["systems", "relationships", "decisions", "useful", "steady"]
+    },
+    {
+      "id": 32,
+      "category": "meta",
+      "question": "What would be lost if my bio were reduced to a single job title and age?",
+      "expected_keywords": ["values", "approach", "preferences", "constraints", "relationships"]
+    },
+    {
+      "id": 33,
+      "category": "meta",
+      "question": "Which details are load-bearing for understanding me, and which are ornamental?",
+      "expected_keywords": ["systems", "relationships", "decisions", "pragmatic", "optionality"]
+    },
+    {
+      "id": 34,
+      "category": "meta",
+      "question": "What is the shortest accurate description of how I want my life to feel?",
+      "expected_keywords": ["useful", "steady", "hard to knock over", "optionality"]
+    },
+    {
+      "id": 35,
+      "category": "meta",
+      "question": "What tradeoffs am I consciously making that someone skimming the bio might miss?",
+      "expected_keywords": ["not impressive", "useful", "quality over status", "optionality"]
+    }
+  ]
+}
+

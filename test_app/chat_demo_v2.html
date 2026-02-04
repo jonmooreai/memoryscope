@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Scope API v2 - Chat Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .header .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 300px 350px;
+            gap: 0;
+            overflow: hidden;
+        }
+
+        .panel {
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        /* Chat Panel */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .message-content {
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: #667eea;
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .message.status {
+            opacity: 0.7;
+        }
+
+        .status-content {
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: #fff3cd;
+            color: #856404;
+            font-size: 12px;
+            font-style: italic;
+            border-left: 3px solid #ffc107;
+        }
+
+        .chat-input-container {
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .send-btn:hover {
+            background: #5568d3;
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Memories Panel */
+        .memory-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .memory-item.v2-event {
+            border-left-color: #28a745;
+        }
+
+        .memory-item.v2-impact {
+            border-left-color: #ffc107;
+        }
+
+        .memory-item.v2-sealed {
+            border-left-color: #dc3545;
+            opacity: 0.7;
+        }
+
+        .memory-header {
+            font-weight: 600;
+            font-size: 12px;
+            color: #667eea;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .memory-type {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+
+        .memory-type.event {
+            background: #28a745;
+        }
+
+        .memory-type.impact {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .memory-type.sealed {
+            background: #dc3545;
+        }
+
+        .memory-content {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .memory-constraints {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .constraint-item {
+            font-size: 11px;
+            color: #888;
+            margin: 3px 0;
+        }
+
+        /* Console Panel */
+        .console-log {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .console-log.info {
+            background: #e7f3ff;
+            color: #0066cc;
+        }
+
+        .console-log.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .console-log.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .console-log.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .log-time {
+            opacity: 0.6;
+            margin-right: 8px;
+        }
+
+        .controls {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .toggle-v2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .toggle-v2 input[type="checkbox"] {
+            width: auto;
+        }
+
+        .v2-features {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e7f3ff;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .v2-features h4 {
+            margin-bottom: 5px;
+            color: #0066cc;
+        }
+
+        .v2-features ul {
+            margin-left: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Memory Scope API v2 - Chat Demo</h1>
+        <p>Interactive chat interface with v2 API features</p>
+        <div class="badge">v2.2 API Enabled</div>
+    </div>
+
+    <div class="container">
+        <!-- Chat Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>Chat</span>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-container">
+                <input 
+                    type="text" 
+                    id="chatInput" 
+                    class="chat-input" 
+                    placeholder="Type your message..."
+                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                />
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <!-- Memories Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>Memories (v2)</span>
+            </div>
+            <div class="panel-content" id="memoriesPanel">
+                <div style="padding: 20px; text-align: center; color: #999;">
+                    Memories will appear here as they are stored
+                </div>
+            </div>
+        </div>
+
+        <!-- Console Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>Console</span>
+                <button onclick="clearConsole()" style="padding: 4px 8px; font-size: 11px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Clear</button>
+            </div>
+            <div class="panel-content">
+                <div class="controls">
+                    <div class="control-group">
+                        <label>User ID</label>
+                        <input type="text" id="userId" value="u_demo_user" onchange="updateUserId()">
+                    </div>
+                    <div class="control-group">
+                        <label>Tenant ID</label>
+                        <input type="text" id="tenantId" value="t_demo">
+                    </div>
+                    <div class="toggle-v2">
+                        <input type="checkbox" id="useV2" checked>
+                        <label for="useV2">Use v2 API</label>
+                    </div>
+                    <div class="v2-features">
+                        <h4>v2 Features:</h4>
+                        <ul>
+                            <li>Automatic impact extraction</li>
+                            <li>Policy-driven sealing</li>
+                            <li>Context reconstruction</li>
+                            <li>Truth mode enforcement</li>
+                        </ul>
+                    </div>
+                </div>
+                <div id="console" style="max-height: 400px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        // Set your MemoryScope API key here or load from config
+        let API_KEY = '';
+        let OPENAI_API_KEY = ''; // Will be loaded from config or prompted
+        let currentUserId = 'u_demo_user';
+        let currentTenantId = 't_demo';
+        let conversationHistory = [];
+        let useV2API = true;
+
+        // Initialize
+        document.getElementById('useV2').addEventListener('change', (e) => {
+            useV2API = e.target.checked;
+            log('info', `Switched to ${useV2API ? 'v2' : 'v1'} API`);
+        });
+
+        document.getElementById('userId').addEventListener('change', (e) => {
+            currentUserId = e.target.value || 'u_demo_user';
+            log('info', `User ID changed to: ${currentUserId}`);
+            loadMemories();
+        });
+
+        document.getElementById('tenantId').addEventListener('change', (e) => {
+            currentTenantId = e.target.value || 't_demo';
+            log('info', `Tenant ID changed to: ${currentTenantId}`);
+        });
+
+        // Get API key (uses default if set, otherwise prompts)
+        function getApiKey() {
+            if (!API_KEY) {
+                API_KEY = prompt('Enter your Memory Scope API key:');
+                if (!API_KEY) {
+                    alert('API key is required');
+                    return null;
+                }
+            }
+            return API_KEY;
+        }
+
+        // Get OpenAI key
+        function getOpenAIKey() {
+            if (!OPENAI_API_KEY) {
+                OPENAI_API_KEY = prompt('Enter your OpenAI API key:');
+                if (!OPENAI_API_KEY) {
+                    alert('OpenAI API key is required');
+                    return null;
+                }
+            }
+            return OPENAI_API_KEY;
+        }
+
+        function log(level, message, data = {}) {
+            const console = document.getElementById('console');
+            const time = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `console-log ${level}`;
+            logEntry.innerHTML = `
+                <span class="log-time">${time}</span>
+                <strong>${message}</strong>
+                ${Object.keys(data).length > 0 ? `<pre style="margin-top: 5px; font-size: 11px; white-space: pre-wrap;">${JSON.stringify(data, null, 2)}</pre>` : ''}
+            `;
+            console.insertBefore(logEntry, console.firstChild);
+            console.scrollTop = 0;
+        }
+
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '';
+        }
+
+        function addMessage(role, content, isStatus = false) {
+            const messages = document.getElementById('chatMessages');
+            const message = document.createElement('div');
+            message.className = `message ${role}${isStatus ? ' status' : ''}`;
+            const contentClass = isStatus ? 'status-content' : 'message-content';
+            message.innerHTML = `
+                <div class="${contentClass}">${content.replace(/\n/g, '<br>')}</div>
+            `;
+            messages.appendChild(message);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addStatusMessage(content) {
+            addMessage('assistant', content, true);
+        }
+
+        function updateUserId() {
+            currentUserId = document.getElementById('userId').value || 'u_demo_user';
+            loadMemories();
+        }
+
+        // V2 API Functions
+        async function queryMemoriesV2(queryText = null) {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                addStatusMessage('⚠️ API key not set');
+                return null;
+            }
+
+            try {
+                log('info', 'Querying memories using v2 API...', {
+                    tenant_id: currentTenantId,
+                    user_id: currentUserId,
+                    purpose: 'chat_response',
+                    query_text: queryText
+                });
+
+                // Add timeout to fetch
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch(`${API_BASE_URL}/v2/memories/query`, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tenant_id: currentTenantId,
+                        scope: {
+                            scope_type: 'user',
+                            scope_id: currentUserId,
+                            flags: {}
+                        },
+                        purpose: 'chat_response',
+                        query_text: queryText, // Use analyzed query text
+                        limit: 50
+                    }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Query failed');
+                }
+
+                const data = await response.json();
+                log('success', 'Retrieved memories via v2 API', {
+                    memory_ids: data.memory_ids?.length || 0,
+                    impacts: data.impacts?.length || 0,
+                    seeds: data.seeds?.length || 0,
+                    events: data.events?.length || 0,
+                    denied_ids: data.denied_ids?.length || 0
+                });
+
+                return data;
+            } catch (error) {
+                const errorMsg = error.name === 'AbortError' 
+                    ? 'Request timed out after 10 seconds. Check if API server is running and database is connected.'
+                    : error.message;
+                addStatusMessage(`❌ Query failed: ${errorMsg}`);
+                log('error', 'Failed to query memories', { error: errorMsg, stack: error.stack });
+                return null;
+            }
+        }
+
+        async function reconstructContextV2(queryText = '') {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                addStatusMessage('⚠️ API key not set');
+                return null;
+            }
+
+            try {
+                log('info', 'Reconstructing context using v2 API...');
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+                const response = await fetch(`${API_BASE_URL}/v2/reconstruct`, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tenant_id: currentTenantId,
+                        scope: {
+                            scope_type: 'user',
+                            scope_id: currentUserId,
+                            flags: {}
+                        },
+                        purpose: 'chat_response',
+                        query_text: queryText,
+                        include_events: false
+                    }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Reconstruction failed');
+                }
+
+                const data = await response.json();
+                log('success', 'Reconstructed context', {
+                    confidence: data.confidence,
+                    sources: data.sources
+                });
+
+                return data.reconstructed_context;
+            } catch (error) {
+                const errorMsg = error.name === 'AbortError' 
+                    ? 'Reconstruction timed out'
+                    : error.message;
+                addStatusMessage(`❌ Reconstruction failed: ${errorMsg}`);
+                log('error', 'Failed to reconstruct context', { error: errorMsg });
+                return null;
+            }
+        }
+
+        /**
+         * Use LLM to extract and analyze memories from conversation text.
+         * Returns structured memory data ready for the v2 API.
+         */
+        async function extractMemoriesWithLLM(userMessage, aiResponse, conversationHistory) {
+            const openaiKey = getOpenAIKey();
+            if (!openaiKey) {
+                log('warning', 'OpenAI key not available for memory extraction');
+                return [];
+            }
+
+            try {
+                addStatusMessage('🧠 Analyzing conversation with LLM...');
+                
+                const systemPrompt = `You are a memory extraction system for MemoryScope API v2. 
+Your job is to analyze conversation text and extract structured memories.
+
+EXTRACTION RULES:
+1. Extract EVERY meaningful piece of information from the conversation
+2. Each memory should be atomic and self-contained
+3. Focus on: user preferences, facts about the user, events that happened, constraints/rules, and triggers/cues
+
+MEMORY TYPES:
+- "event": Something that happened (e.g., "I went to the store", "We met yesterday")
+- "impact": A constraint, preference, or rule (e.g., "I prefer dark mode", "Don't call after 9pm", "I'm vegetarian")
+- "seed": A cue or trigger for future recall (e.g., "When I mention work, remind me about deadlines")
+
+TRUTH MODES:
+- "factual_claim": Objective facts (e.g., "I live in New York", "My birthday is March 15")
+- "subjective_experience": Personal feelings/experiences (e.g., "I feel anxious", "I love chocolate")
+- "procedural": How-to knowledge (e.g., "I make coffee by...", "My morning routine is...")
+- "somatic": Bodily/physical experiences (e.g., "I have a headache", "My back hurts")
+
+SENSITIVITY LEVELS (choose carefully based on content):
+- "low": Public, non-sensitive information (e.g., "I like pizza", "I work in tech")
+- "medium": Personal but not highly sensitive (e.g., "I prefer morning meetings", "I'm vegetarian")
+- "high": Sensitive personal information (e.g., "I'm struggling with anxiety", "I had a difficult breakup")
+- "critical": Highly sensitive (health conditions, financial details, legal issues, trauma)
+
+IMPORTANT: Vary sensitivity levels based on actual content sensitivity. Most casual conversation is "low", personal preferences are "medium", emotional/health topics are "high" or "critical".
+
+STRENGTH (memory importance/confidence, 0.0 to 1.0 - VARY THESE):
+- 0.3-0.5: Casual mentions, low confidence, vague memories, uncertain information
+- 0.6-0.7: Standard memories, moderate confidence (most memories should be here)
+- 0.8-0.9: Important memories, high confidence, explicitly stated preferences/facts
+- 0.9-1.0: Critical memories, very high confidence, core identity/preferences, strongly emphasized
+
+Factors that increase strength:
+- Explicitly stated preferences or facts (+0.1-0.2)
+- Emotional intensity (higher arousal = higher strength, +0.1-0.2)
+- Repetition or emphasis in conversation (+0.1)
+- Personal importance (identity, values, core preferences, +0.1-0.2)
+- High sensitivity content (+0.1)
+
+CRITICAL: You MUST vary strength values. Do NOT use the same value for all memories. 
+- Casual mentions = 0.4-0.6
+- Standard preferences/facts = 0.65-0.75
+- Important preferences/strong statements = 0.8-0.9
+- Core identity/critical info = 0.9-1.0
+
+AFFECT (emotions):
+- valence: -1 (negative) to 1 (positive)
+- arousal: 0 (calm) to 1 (intense)
+- labels: emotion words like ["happy", "excited"] or ["sad", "frustrated"]
+
+CONSTRAINTS (for impact type):
+- kind: "prefer", "avoid", "require", "tone", "style", "boundary", "safety", etc.
+- topic: What it applies to (e.g., "communication", "food", "schedule")
+- target: Who/what it applies to (e.g., "all", "assistant", "calls")
+- params: Additional parameters as object
+
+Return a JSON object with this exact format:
+{
+  "memories": [
+    {
+      "type": "event|impact|seed",
+      "truth_mode": "factual_claim|subjective_experience|procedural|somatic",
+      "sensitivity_level": "low|medium|high|critical",
+      "strength": 0.0 to 1.0,
+      "content_text": "Clear description of the memory",
+      "affect_valence": -1.0 to 1.0,
+      "affect_arousal": 0.0 to 1.0,
+      "affect_labels": ["emotion1", "emotion2"],
+      "occurred_at": "now",
+      "constraints": [{"kind": "prefer", "topic": "theme", "target": "all", "params": {}}] // only for impacts
+    }
+  ]
+}`;
+
+                const conversationContext = conversationHistory
+                    .slice(-10) // Last 10 messages for context
+                    .map(msg => `${msg.role}: ${msg.content}`)
+                    .join('\n');
+
+                const userPrompt = `Analyze this conversation and extract all meaningful memories:
+
+${conversationContext}
+
+User just said: "${userMessage}"
+Assistant responded: "${aiResponse}"
+
+Extract memories from both the user's message and the assistant's response if they contain new information.
+
+IMPORTANT: 
+- VARY sensitivity_level values (low, medium, high, critical) based on actual content sensitivity
+- VARY strength values (0.3-1.0) based on importance, confidence, and emotional intensity
+- Do NOT use the same sensitivity or strength for all memories
+- More sensitive content should have higher strength
+- Emotional content should have higher strength
+
+Return ONLY valid JSON object with format: {"memories": [...]}, no other text.`;
+
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${openaiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userPrompt }
+                        ],
+                        temperature: 0.3, // Lower temperature for more consistent extraction
+                        response_format: { type: 'json_object' }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('OpenAI API error');
+                }
+
+                const data = await response.json();
+                let extractedData;
+                
+                try {
+                    const content = data.choices[0].message.content;
+                    const parsed = JSON.parse(content);
+                    
+                    // Handle different response formats:
+                    // 1. Direct array: [...]
+                    // 2. Object with memories key: {memories: [...]}
+                    // 3. Object with other structure
+                    if (Array.isArray(parsed)) {
+                        extractedData = parsed;
+                    } else if (parsed.memories && Array.isArray(parsed.memories)) {
+                        extractedData = parsed.memories;
+                    } else if (parsed.memory && Array.isArray(parsed.memory)) {
+                        extractedData = parsed.memory;
+                    } else {
+                        // Single memory object
+                        extractedData = [parsed];
+                    }
+                } catch (e) {
+                    // Fallback: try to extract JSON array from text
+                    const content = data.choices[0].message.content;
+                    const jsonMatch = content.match(/\[[\s\S]*\]/);
+                    if (jsonMatch) {
+                        extractedData = JSON.parse(jsonMatch[0]);
+                    } else {
+                        log('warning', 'Could not parse LLM response, using fallback', { 
+                            content: content.substring(0, 200) 
+                        });
+                        throw new Error('Could not parse LLM response as JSON');
+                    }
+                }
+
+                log('success', `LLM extracted ${extractedData.length} memories`, { extractedData });
+                return extractedData;
+
+            } catch (error) {
+                log('error', 'LLM memory extraction failed', { error: error.message });
+                // Fallback: return a simple event memory with default strength
+                return [{
+                    type: 'event',
+                    truth_mode: 'factual_claim',
+                    sensitivity_level: 'low',
+                    strength: 0.65, // Default moderate strength
+                    content_text: userMessage,
+                    affect_valence: 0.0,
+                    affect_arousal: 0.0,
+                    affect_labels: [],
+                    occurred_at: 'now'
+                }];
+            }
+        }
+
+        async function createMemoryV2(memoryData) {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                addStatusMessage('⚠️ API key not set');
+                return null;
+            }
+
+            try {
+                // Use LLM-extracted data if available, otherwise use provided data
+                const occurredAt = memoryData.occurred_at === 'now' 
+                    ? new Date().toISOString() 
+                    : (memoryData.occurred_at || new Date().toISOString());
+
+                // Calculate strength based on multiple factors if not provided by LLM
+                let strengthValue = memoryData.strength;
+                if (strengthValue === undefined || strengthValue === null) {
+                    // Default strength calculation based on type, affect, and sensitivity
+                    const baseStrength = 0.65; // Default moderate strength
+                    const affectBoost = Math.abs(memoryData.affect_valence || 0) * 0.1; // Emotional intensity boosts strength
+                    const arousalBoost = (memoryData.affect_arousal || 0) * 0.15; // High arousal = more memorable
+                    const typeBoost = memoryData.type === 'impact' ? 0.1 : (memoryData.type === 'seed' ? 0.05 : 0); // Impacts are more important
+                    const sensitivityBoost = memoryData.sensitivity_level === 'high' || memoryData.sensitivity_level === 'critical' ? 0.1 : 0; // Sensitive = more important
+                    strengthValue = Math.min(1.0, baseStrength + affectBoost + arousalBoost + typeBoost + sensitivityBoost);
+                }
+                
+                // Ensure strength is in valid range
+                strengthValue = Math.max(0.3, Math.min(1.0, strengthValue));
+
+                const payload = {
+                    tenant_id: currentTenantId,
+                    scope: {
+                        scope_type: 'user',
+                        scope_id: currentUserId,
+                        flags: {}
+                    },
+                    type: memoryData.type || 'event',
+                    truth_mode: memoryData.truth_mode || 'factual_claim',
+                    sensitivity: {
+                        level: memoryData.sensitivity_level || 'low',
+                        categories: memoryData.sensitivity_categories || [],
+                        handling: memoryData.sensitivity_level === 'high' || memoryData.sensitivity_level === 'critical' 
+                            ? 'restricted' 
+                            : 'normal'
+                    },
+                    ownership: {
+                        owner_type: 'user',
+                        owners: [currentUserId],
+                        claimant: currentUserId,
+                        subjects: [currentUserId],
+                        dispute_state: 'undisputed',
+                        visibility: 'private'
+                    },
+                    temporal: {
+                        occurred_at_observed: occurredAt,
+                        time_precision: 'exact',
+                        time_confidence: 1.0,
+                        ordering_uncertainty: false
+                    },
+                    content: {
+                        format: 'text',
+                        language: 'en',
+                        text: memoryData.content_text || memoryData.text || JSON.stringify(memoryData.value)
+                    },
+                    affect: {
+                        valence: memoryData.affect_valence !== undefined ? memoryData.affect_valence : 0.0,
+                        arousal: memoryData.affect_arousal !== undefined ? memoryData.affect_arousal : 0.0,
+                        labels: memoryData.affect_labels || [],
+                        affect_confidence: memoryData.affect_labels?.length > 0 ? 0.8 : 0.0
+                    },
+                    provenance: {
+                        source: 'user',
+                        surface: 'chat',
+                        confidence: 0.9
+                    },
+                    strength: {
+                        current: strengthValue,
+                        initial: strengthValue,
+                        last_reinforced_at: null,
+                        decay_model: 'half_life',
+                        decay_rate: 0.001
+                    }
+                };
+
+                // Add impact payload if this is an impact type
+                if (memoryData.type === 'impact' && memoryData.constraints) {
+                    payload.impact_payload = {
+                        constraints: memoryData.constraints.map(c => ({
+                            id: `constraint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                            kind: c.kind || 'prefer',
+                            topic: c.topic || 'general',
+                            target: c.target || 'all',
+                            params: c.params || {},
+                            merge_strategy: 'merge',
+                            strength: 0.75
+                        }))
+                    };
+                }
+
+                // Add seed payload if this is a seed type
+                if (memoryData.type === 'seed' && memoryData.cues) {
+                    payload.seed_payload = {
+                        cues: memoryData.cues,
+                        context: memoryData.context || ''
+                    };
+                }
+
+                log('info', 'Creating memory via v2 API...', { payload });
+
+                // Add timeout to fetch
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+                let response;
+                try {
+                    response = await fetch(`${API_BASE_URL}/v2/memories`, {
+                        method: 'POST',
+                        headers: {
+                            'X-API-Key': apiKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+                    if (fetchError.name === 'AbortError') {
+                        throw new Error('Request timed out after 10 seconds. Check if API server is running.');
+                    } else if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError')) {
+                        throw new Error(`Network error: Cannot connect to API server at ${API_BASE_URL}. Make sure the server is running.`);
+                    } else {
+                        throw new Error(`Fetch error: ${fetchError.message}`);
+                    }
+                }
+
+                if (!response.ok) {
+                    let errorDetail = 'Memory creation failed';
+                    try {
+                        const errorData = await response.json();
+                        errorDetail = errorData.detail || errorData.message || JSON.stringify(errorData);
+                    } catch (e) {
+                        errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    throw new Error(errorDetail);
+                }
+
+                const data = await response.json();
+                log('success', 'Created memory via v2 API', {
+                    id: data.id,
+                    state: data.state,
+                    policy_trace: data.policy_trace
+                });
+
+                // Note: Impact extraction happens automatically on the server
+                if (data.state === 'sealed') {
+                    log('info', 'Memory was automatically sealed by policy');
+                }
+
+                return data;
+            } catch (error) {
+                const errorMsg = error.message || 'Unknown error';
+                log('error', 'Failed to create memory', { 
+                    error: errorMsg,
+                    memoryData: memoryData,
+                    stack: error.stack 
+                });
+                addStatusMessage(`❌ Failed to create memory: ${errorMsg}`);
+                return null;
+            }
+        }
+
+        /**
+         * Analyze user's question to determine what memories might be relevant.
+         * Returns search terms and context for memory query.
+         */
+        async function analyzeQueryForMemorySearch(userMessage, conversationHistory) {
+            const openaiKey = getOpenAIKey();
+            if (!openaiKey) {
+                return { query_text: userMessage, search_focus: 'general' };
+            }
+
+            try {
+                const systemPrompt = `You are a memory search analyzer. Your job is to analyze the user's question and determine:
+1. What topics/subjects might be relevant in stored memories
+2. What search terms would help find relevant memories
+3. What type of information the user is asking about (preferences, facts, events, constraints)
+
+Return a JSON object with:
+- "query_text": A search query string optimized for finding relevant memories
+- "search_focus": One of: "preferences", "facts", "events", "constraints", "general"
+- "topics": Array of relevant topics/keywords to search for
+- "memory_types": Array of memory types that might be relevant: ["event", "impact", "seed"]
+
+Be specific and extract key entities, topics, and concepts from the user's question.`;
+
+                const conversationContext = conversationHistory
+                    .slice(-5) // Last 5 messages for context
+                    .map(msg => `${msg.role}: ${msg.content}`)
+                    .join('\n');
+
+                const userPrompt = `Analyze this user question to determine what memories to search for:
+
+${conversationContext}
+
+User question: "${userMessage}"
+
+Return ONLY valid JSON object, no other text.`;
+
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${openaiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userPrompt }
+                        ],
+                        temperature: 0.3,
+                        response_format: { type: 'json_object' }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('OpenAI API error');
+                }
+
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+                const parsed = JSON.parse(content);
+                
+                log('success', 'Query analyzed for memory search', { analysis: parsed });
+                return parsed;
+            } catch (error) {
+                log('warning', 'Query analysis failed, using original message', { error: error.message });
+                return { query_text: userMessage, search_focus: 'general', topics: [], memory_types: [] };
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const apiKey = getApiKey();
+            const openaiKey = getOpenAIKey();
+            if (!apiKey || !openaiKey) return;
+
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            input.disabled = true;
+
+            addMessage('user', message);
+            input.value = '';
+            conversationHistory.push({ role: 'user', content: message });
+
+            try {
+                let context = '';
+                
+                if (useV2API) {
+                    // Step 1: Analyze the user's question to determine what memories to search for
+                    addStatusMessage('🧠 Analyzing question to find relevant memories...');
+                    const queryAnalysis = await analyzeQueryForMemorySearch(message, conversationHistory);
+                    
+                    // Step 2: Query memories using the analyzed query
+                    addStatusMessage('🔍 Searching for relevant memories...');
+                    const queryResult = await queryMemoriesV2(queryAnalysis.query_text || message);
+                    
+                    if (queryResult) {
+                        addStatusMessage(`✓ Found ${queryResult.memory_ids?.length || 0} relevant memories (${queryResult.impacts?.length || 0} impacts, ${queryResult.events?.length || 0} events)`);
+                    }
+                    
+                    // Step 3: Reconstruct context from retrieved memories
+                    addStatusMessage('🔄 Reconstructing context from retrieved memories...');
+                    const reconstructed = await reconstructContextV2(queryAnalysis.query_text || message);
+                    
+                    if (reconstructed) {
+                        context = `RELEVANT MEMORY CONTEXT:\n${reconstructed}\n\n`;
+                        addStatusMessage('✓ Context reconstructed from memories');
+                    }
+                    
+                    // Step 4: Add active constraints
+                    if (queryResult?.impacts?.length > 0) {
+                        context += `ACTIVE CONSTRAINTS (user preferences/rules):\n`;
+                        queryResult.impacts.forEach(impact => {
+                            context += `- ${impact.kind}: ${JSON.stringify(impact.params)}\n`;
+                        });
+                        context += '\n';
+                    }
+                    
+                    // Step 5: Add search context
+                    if (queryAnalysis.topics && queryAnalysis.topics.length > 0) {
+                        context += `SEARCH FOCUS: Looking for information about: ${queryAnalysis.topics.join(', ')}\n\n`;
+                    }
+                }
+
+                context += `User question: ${message}\n\nRespond naturally and helpfully using the memory context above if relevant.`;
+
+                // Step 6: Generate response using retrieved memories
+                addStatusMessage('🤖 Generating response with memory context...');
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${openaiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: 'You are a helpful assistant with access to user memories.' },
+                            { role: 'user', content: context }
+                        ],
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('OpenAI API error');
+                }
+
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content;
+                addStatusMessage('✓ Response received');
+                addMessage('assistant', aiResponse);
+                conversationHistory.push({ role: 'assistant', content: aiResponse });
+
+                // Extract and store memories using LLM
+                if (useV2API) {
+                    addStatusMessage('💾 Extracting and storing memories with LLM...');
+                    setTimeout(async () => {
+                        try {
+                            // Use LLM to extract structured memories
+                            const extractedMemories = await extractMemoriesWithLLM(
+                                message, 
+                                aiResponse, 
+                                conversationHistory
+                            );
+
+                            if (extractedMemories && extractedMemories.length > 0) {
+                                addStatusMessage(`📝 LLM extracted ${extractedMemories.length} memory/memories`);
+                                
+                                let successCount = 0;
+                                let sealedCount = 0;
+                                
+                                // Store each extracted memory
+                                for (const memoryData of extractedMemories) {
+                                    try {
+                                        const result = await createMemoryV2(memoryData);
+                                        if (result) {
+                                            successCount++;
+                                            const shortId = result.id ? result.id.substring(0, 12) + '...' : 'unknown';
+                                            log('success', `Stored ${memoryData.type} memory`, {
+                                                id: shortId,
+                                                state: result.state,
+                                                type: memoryData.type
+                                            });
+                                            
+                                            if (result.state === 'sealed') {
+                                                sealedCount++;
+                                            }
+                                        }
+                                    } catch (error) {
+                                        log('error', 'Failed to store extracted memory', { 
+                                            error: error.message,
+                                            memoryData 
+                                        });
+                                    }
+                                }
+                                
+                                addStatusMessage(`✓ Stored ${successCount}/${extractedMemories.length} memories`);
+                                if (sealedCount > 0) {
+                                    addStatusMessage(`🔒 ${sealedCount} memory/memories automatically sealed by policy`);
+                                }
+                                addStatusMessage('🔄 Impact extraction may have created additional constraint memories');
+                                
+                                // Reload memories panel
+                                loadMemories();
+                            } else {
+                                addStatusMessage('⚠️ No memories extracted from conversation');
+                            }
+                        } catch (error) {
+                            log('error', 'Failed to extract/store memories', { error: error.message });
+                            addStatusMessage(`❌ Memory extraction failed: ${error.message}`);
+                        }
+                    }, 500);
+                }
+
+            } catch (error) {
+                log('error', 'Failed to send message', { error: error.message });
+                addStatusMessage(`❌ Error: ${error.message}`);
+                addMessage('assistant', 'Sorry, I encountered an error. Please check the console for details.');
+            } finally {
+                sendBtn.disabled = false;
+                input.disabled = false;
+                input.focus();
+            }
+        }
+
+        async function loadMemories() {
+            if (!useV2API) return;
+
+            const apiKey = getApiKey();
+            if (!apiKey) return;
+
+            try {
+                const queryResult = await queryMemoriesV2(null); // Load all memories for display
+                if (!queryResult) return;
+
+                const panel = document.getElementById('memoriesPanel');
+                panel.innerHTML = '';
+
+                // Show impacts
+                if (queryResult.impacts?.length > 0) {
+                    queryResult.impacts.forEach(impact => {
+                        const item = document.createElement('div');
+                        item.className = 'memory-item v2-impact';
+                        item.innerHTML = `
+                            <div class="memory-header">
+                                Impact <span class="memory-type impact">${impact.kind}</span>
+                            </div>
+                            <div class="memory-content">
+                                ${JSON.stringify(impact.params, null, 2)}
+                            </div>
+                        `;
+                        panel.appendChild(item);
+                    });
+                }
+
+                // Show events (non-sealed)
+                if (queryResult.events?.length > 0) {
+                    queryResult.events.forEach(eventId => {
+                        const item = document.createElement('div');
+                        item.className = 'memory-item v2-event';
+                        item.innerHTML = `
+                            <div class="memory-header">
+                                Event <span class="memory-type event">event</span>
+                            </div>
+                            <div class="memory-content">
+                                ID: ${eventId}
+                            </div>
+                        `;
+                        panel.appendChild(item);
+                    });
+                }
+
+                if (queryResult.impacts?.length === 0 && queryResult.events?.length === 0) {
+                    panel.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No memories found</div>';
+                }
+
+            } catch (error) {
+                log('error', 'Failed to load memories', { error: error.message });
+            }
+        }
+
+        // Initialize
+        log('info', 'Chat Demo v2 initialized', {
+            api_base_url: API_BASE_URL,
+            use_v2: useV2API,
+            api_key_set: !!API_KEY && API_KEY.length > 0
+        });
+        
+        // Load memories on startup if API key is set
+        if (API_KEY) {
+            setTimeout(() => {
+                loadMemories();
+            }, 500);
+        }
+    </script>
+</body>
+</html>
+
